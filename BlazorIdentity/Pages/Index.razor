@@ -5,6 +5,16 @@
 <button @onclick="@LogUsername">Write user info to console</button>
 <p>@message</p>
 
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, @context.User.Identity.Name!</h1>
+        <p>You can only see this content if you're authenticated.</p>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Authentication Failure!</h1>
+        <p>You're not signed in.</p>
+    </NotAuthorized>
+</AuthorizeView>
 @code {
     private string message { get; set; } = "None";
 
