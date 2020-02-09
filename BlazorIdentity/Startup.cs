@@ -47,6 +47,7 @@ namespace BlazorIdentity
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseAuthentication();
 
             app.UseRouting();
 
