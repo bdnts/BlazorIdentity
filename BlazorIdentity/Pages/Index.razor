@@ -1,5 +1,25 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<h1>Hello, world!</h1>
+<button @onclick="@LogUsername">Write user info to console</button>
+<p>@message</p>
 
-Welcome to your new app.
+@code {
+    private string message { get; set; } = "None";
+
+    private async Task LogUsername()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            message = $"{user.Identity.Name} is authenticated.";
+        }
+        else
+        {
+            message = "The user is NOT authenticated.";
+        }
+    }
+}
