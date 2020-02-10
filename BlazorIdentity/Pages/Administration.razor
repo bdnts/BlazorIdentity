@@ -76,10 +76,10 @@
                                        @bind="objUser.PasswordHash" />
                                 <select class="form-control"
                                         @bind="@CurrentUserRole">
-                                    @foreach (var option in Options)
+                                    @foreach (var role in listRoles)
                                     {
-                                        <option value="@option">
-                                            @option
+                                        <option value="@role.Name">
+                                            @role.Name
                                         </option>
                                     }
                                 </select>
@@ -130,33 +130,22 @@
     List<BlazorIdentityUser> ColUsers = new List<BlazorIdentityUser>();
     // Options to display in the roles dropdown when editing a user
     //TODO: pull this from roles
-    List<string> Options = new List<string>() { "admin", "members", "family" };
+    IQueryable<IdentityRole> Roles { get; set; }
+    List<IdentityRole> listRoles { get; set; }
+
     // To hold any possible errors
     string strError = "";
     // To enable showing the Popup
     bool ShowPopup = false;
 
+    //Changed the expectation that database is already populated with Role. 
+    //User admin exists, and a user with admin rights is using Administration
     protected override async Task OnInitializedAsync()
     {
-        // ensure there is a ADMINISTRATION_ROLE
-        var RoleResult = await _RoleManager.FindByNameAsync(ADMINISTRATION_ROLE);
-        if (RoleResult == null)
-        {
-            // Create ADMINISTRATION_ROLE Role
-            await _RoleManager.CreateAsync(new IdentityRole(ADMINISTRATION_ROLE));
-        }
-        // Ensure a user named Admin@BlazorHelpWebsite.com is an Administrator
-        var user = await _UserManager.FindByNameAsync("Admin@BlazorHelpWebsite.com");
-        if (user != null)
-        {
-            // Is Admin@BlazorHelpWebsite.com in administrator role?
-            var UserResult = await _UserManager.IsInRoleAsync(user, ADMINISTRATION_ROLE);
-            if (!UserResult)
-            {
-                // Put admin in Administrator role
-                await _UserManager.AddToRoleAsync(user, ADMINISTRATION_ROLE);
-            }
-        }
+        // We have a list of roles
+        Roles = _RoleManager.Roles;
+        listRoles = Roles.ToList<IdentityRole>();
+
         // Get the current logged in user
         CurrentUser = (await authenticationStateTask).User;
         // Get the users
@@ -254,7 +243,8 @@
                     new BlazorIdentityUser
                     {
                         UserName = objUser.UserName,
-                        Email = objUser.Email
+                        Email = objUser.Email,
+			            EmailConfirmed = true
                     };
                 var CreateResult =
                     await _UserManager
