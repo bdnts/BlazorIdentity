@@ -79,7 +79,8 @@ namespace BlazorIdentity
                     BlazorIdentityUser user = new BlazorIdentityUser
                     {
                         UserName = "admin@example.com",
-                        Email = "admin@example.com"
+                        Email = "admin@example.com",
+                        EmailConfirmed = true                        
                     };
 
                     IdentityResult result = userManager.CreateAsync(user, "P@ssword1234").Result;
