@@ -11,6 +11,10 @@ namespace BlazorIdentity.Data
 {
     public class BlazorIdentityContext : IdentityDbContext<BlazorIdentityUser>
     {
+        private string RoleIdAdmin = Guid.NewGuid().ToString();
+        private string RoleIdMember = Guid.NewGuid().ToString();
+        private string RoleIdFamily = Guid.NewGuid().ToString();
+
         public BlazorIdentityContext(DbContextOptions<BlazorIdentityContext> options)
             : base(options)
         {
@@ -22,6 +26,28 @@ namespace BlazorIdentity.Data
             // Customize the ASP.NET Identity model and override the defaults if needed.
             // For example, you can rename the ASP.NET Identity table names and more.
             // Add your customizations after calling base.OnModelCreating(builder);
+            builder.Entity<IdentityRole>()
+                .HasData(new IdentityRole 
+                { 
+                    Id = RoleIdAdmin,
+                    Name = "admin", NormalizedName = "ADMIN",
+                    ConcurrencyStamp = DateTime.UtcNow.ToString()
+                },
+                new IdentityRole
+                {
+                    Id = RoleIdMember,
+                    Name = "member",
+                    NormalizedName = "MEMBER",
+                    ConcurrencyStamp = DateTime.UtcNow.ToString()
+                },
+                new IdentityRole
+                {
+                    Id = RoleIdFamily,
+                    Name = "family",
+                    NormalizedName = "FAMILY",
+                    ConcurrencyStamp = DateTime.UtcNow.ToString()
+                }
+            );
         }
     }
 }

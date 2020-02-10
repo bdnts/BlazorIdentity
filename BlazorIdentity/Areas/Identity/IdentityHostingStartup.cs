@@ -21,6 +21,7 @@ namespace BlazorIdentity.Areas.Identity
                         context.Configuration.GetConnectionString("BlazorIdentityContextConnection")));
 
                 services.AddDefaultIdentity<BlazorIdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                    .AddRoles<IdentityRole>()
                     .AddEntityFrameworkStores<BlazorIdentityContext>();
             });
         }
