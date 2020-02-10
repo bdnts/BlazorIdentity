@@ -13,7 +13,7 @@ namespace BlazorIdentity.Data
     {
         private string RoleIdAdmin = Guid.NewGuid().ToString();
         private string RoleIdMember = Guid.NewGuid().ToString();
-        private string RoleIdFamily = Guid.NewGuid().ToString();
+        private string RoleIdUser = Guid.NewGuid().ToString();
 
         public BlazorIdentityContext(DbContextOptions<BlazorIdentityContext> options)
             : base(options)
@@ -42,9 +42,9 @@ namespace BlazorIdentity.Data
                 },
                 new IdentityRole
                 {
-                    Id = RoleIdFamily,
-                    Name = "family",
-                    NormalizedName = "FAMILY",
+                    Id = RoleIdUser,
+                    Name = "user",
+                    NormalizedName = "USER",
                     ConcurrencyStamp = DateTime.UtcNow.ToString()
                 }
             );
