@@ -109,6 +109,29 @@ namespace BlazorIdentity.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "161a5b5a-6f6d-4725-a496-e585b9ffee43",
+                            ConcurrencyStamp = "2/10/2020 4:26:26 AM",
+                            Name = "admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "05ebce49-0051-47fe-b382-65a74fea7995",
+                            ConcurrencyStamp = "2/10/2020 4:26:26 AM",
+                            Name = "member",
+                            NormalizedName = "MEMBER"
+                        },
+                        new
+                        {
+                            Id = "129f8d3c-f076-41cc-a822-e9be998ebecf",
+                            ConcurrencyStamp = "2/10/2020 4:26:26 AM",
+                            Name = "family",
+                            NormalizedName = "FAMILY"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
