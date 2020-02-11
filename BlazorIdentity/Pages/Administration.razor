@@ -5,9 +5,8 @@
 @inject UserManager<BlazorIdentityUser> _UserManager
 @inject RoleManager<IdentityRole> _RoleManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles ="admin")]
 <h3>Administration</h3>
-<AuthorizeView Roles="admin">
-    <Authorized>
         <table class="table">
             <thead>
                 <tr>
@@ -104,11 +103,6 @@
             </div>
         }
         <button class="btn btn-success" @onclick="AddNewUser">Add User</button>
-    </Authorized>
-    <NotAuthorized>
-        <p>You're not signed in as a user in @ADMINISTRATION_ROLE.</p>
-    </NotAuthorized>
-</AuthorizeView>
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
