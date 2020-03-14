@@ -1,0 +1,88 @@
+﻿@page "/LoginB"
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.AspNetCore.Identity;
+@using BlazorIdentity.Areas.Identity.Data;
+@using System.ComponentModel.DataAnnotations;
+@using Microsoft.Extensions.Logging;
+@using BlazorIdentity.Areas.Identity.Pages.Account
+
+@inject UserManager<BlazorIdentityUser> _UserManager
+@inject SignInManager<BlazorIdentityUser> _SignInManager
+@inject NavigationManager _NavMan;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IdentityAuthenticationStateProvider  asp
+<h3>LoginB</h3>
+<button @onclick="Login">Login</button>
+
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    System.Security.Claims.ClaimsPrincipal CurrentUser;
+
+    // Property used to add or edit the currently selected user
+    BlazorIdentityUser objUser = new BlazorIdentityUser();
+
+    // Tracks the selected role for the currently selected user
+    string CurrentUserRole { get; set; } = "Users";
+
+    // To hold any possible errors
+    string strError = "";
+
+    // To enable showing the Popup
+    bool ShowPopup = false;
+
+
+    public LoginModel.InputModel Input { get; set; } = new LoginModel.InputModel();
+
+    //Changed the expectation that database is already populated with Role.
+    //User admin exists, and a user with admin rights is using Administration
+    protected override async Task OnInitializedAsync()
+    {
+        // Get the current logged in user
+        CurrentUser = (await authenticationStateTask).User;
+
+        Input.Email = "test@example.com";
+        Input.Password = "P@ssword1234";
+        Input.RememberMe = false;
+
+        try
+        {
+            ////LoginModel l = new LoginModel(_SignInManager, _UserManager);
+            //l.Input = Input;
+            //l.ErrorMessage = string.Empty;
+            //var ret = await l.OnPostAsync("~/");
+            var result = await _SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                //_logger.LogInformation("User logged in.");
+                _NavMan.NavigateTo("/");
+            }
+            if (result.RequiresTwoFactor)
+            {
+                _NavMan.NavigateTo("/LoginWith2fa");
+            }
+            if (result.IsLockedOut)
+            {
+                //_logger.LogWarning("User account locked out.");
+                _NavMan.NavigateTo("/Lockout");
+            }
+            else
+            {
+                strError = "Invalid login attempt.";
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+
+
+
+    void Login()
+    {
+        // Close the Popup
+        ShowPopup = false;
+    }
+}
