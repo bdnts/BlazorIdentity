@@ -2,21 +2,91 @@
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.AspNetCore.Identity;
 @using BlazorIdentity.Areas.Identity.Data;
-@using System.ComponentModel.DataAnnotations;
-@using Microsoft.Extensions.Logging;
 @using BlazorIdentity.Areas.Identity.Pages.Account
+@using BlazorIdentity.Data;
+@using System.ComponentModel.DataAnnotations;
+@using System;
 
 @inject UserManager<BlazorIdentityUser> _UserManager
 @inject SignInManager<BlazorIdentityUser> _SignInManager
 @inject NavigationManager _NavMan;
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IdentityAuthenticationStateProvider  asp
+@*@inject IdentityAuthenticationStateProvider  asp*@
 <h3>LoginB</h3>
-<button @onclick="Login">Login</button>
+@*<button @onclick="Login">Login</button>*@
+
+<EditForm class="form-signin" OnValidSubmit="OnSubmit" Model="loginParameters">
+    <DataAnnotationsValidator />
+    <h4 class="font-weight-normal text-center">Login</h4>
+
+    <label for="inputUsername" class="sr-only">User Name</label>
+    <InputText id="inputUsername" class="form-control" @bind-Value="loginParameters.UserName" autofocus placeholder="Username" />
+    <ValidationMessage For="@(() => loginParameters.UserName)" />
+
+    <label for="inputPassword" class="sr-only">Password</label>
+    <InputText type="password" id="inputPassword" class="form-control" placeholder="Password" @bind-Value="loginParameters.Password" />
+    <ValidationMessage For="@(() => loginParameters.Password)" />
+
+    <div class="form-check m-3">
+        <InputCheckbox id="inputRememberMe" class="form-check-input" @bind-Value="@loginParameters.RememberMe" />
+        <label class="form-check-label" for="inputRememberMe">Remember Me</label>
+    </div>
+
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+    <label class="text-danger">@error</label>
+
+    <NavLink href="register">
+        <h6 class="font-weight-normal text-center">Create account</h6>
+    </NavLink>
+</EditForm>
 
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    LoginParameters loginParameters { get; set; } = new LoginParameters();
+    string error { get; set; }
+
+    async Task OnSubmit()
+    {
+        error = null;
+        try
+        {
+            var user = await _UserManager.FindByNameAsync(loginParameters.UserName);
+            if (user == null) { error = "User does not exist"; return; }
+
+            var result = await _SignInManager.CheckPasswordSignInAsync(user, loginParameters.Password, false);
+            if (!result.Succeeded) { error = "Invalid password"; return; }
+
+            await _SignInManager.SignInAsync(user, loginParameters.RememberMe);
+
+            //var result = await _SignInManager.PasswordSignInAsync(loginParameters.UserName, loginParameters.Password, loginParameters.RememberMe, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                //_logger.LogInformation("User logged in.");
+                _NavMan.NavigateTo("/");
+            }
+            if (result.RequiresTwoFactor)
+            {
+                _NavMan.NavigateTo("/LoginWith2fa");
+            }
+
+            if (result.IsLockedOut)
+            {
+                //_logger.LogWarning("User account locked out.");
+                _NavMan.NavigateTo("/Lockout");
+            }
+            else
+            {
+                error = "Invalid login attempt.";
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
+    }
 
     System.Security.Claims.ClaimsPrincipal CurrentUser;
 
@@ -33,7 +103,6 @@
     bool ShowPopup = false;
 
 
-    public LoginModel.InputModel Input { get; set; } = new LoginModel.InputModel();
 
     //Changed the expectation that database is already populated with Role.
     //User admin exists, and a user with admin rights is using Administration
@@ -41,41 +110,6 @@
     {
         // Get the current logged in user
         CurrentUser = (await authenticationStateTask).User;
-
-        Input.Email = "test@example.com";
-        Input.Password = "P@ssword1234";
-        Input.RememberMe = false;
-
-        try
-        {
-            ////LoginModel l = new LoginModel(_SignInManager, _UserManager);
-            //l.Input = Input;
-            //l.ErrorMessage = string.Empty;
-            //var ret = await l.OnPostAsync("~/");
-            var result = await _SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-            if (result.Succeeded)
-            {
-                //_logger.LogInformation("User logged in.");
-                _NavMan.NavigateTo("/");
-            }
-            if (result.RequiresTwoFactor)
-            {
-                _NavMan.NavigateTo("/LoginWith2fa");
-            }
-            if (result.IsLockedOut)
-            {
-                //_logger.LogWarning("User account locked out.");
-                _NavMan.NavigateTo("/Lockout");
-            }
-            else
-            {
-                strError = "Invalid login attempt.";
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-        }
     }
 
 
@@ -86,3 +120,4 @@
         ShowPopup = false;
     }
 }
+
