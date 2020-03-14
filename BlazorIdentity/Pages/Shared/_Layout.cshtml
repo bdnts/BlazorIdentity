@@ -40,6 +40,9 @@
     </header>
 
     <div class="container">
+        <div class="sidebar">
+            <component type="typeof(BlazorIdentity.Shared.NavMenu)" render-mode="ServerPrerendered" />
+        </div>
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
