@@ -57,8 +57,9 @@ namespace BlazorIdentity.Services.Implementations
 
         public async Task<UserInfo> GetUserInfo()
         {
-            var r1 = await _httpClient.GetStringAsync("https://localhost:44365/api/Authorize/UserInfo");
-            var result = JsonSerializer.Deserialize<UserInfo>(r1);
+            var response = await _httpClient.GetStringAsync("https://localhost:44365/api/Authorize/UserInfo");
+            var result = JsonSerializer.Deserialize<UserInfo>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
             //var result = await _httpClient.GetJsonAsync<UserInfo>("api/Authorize/UserInfo");
             return result;
         }
