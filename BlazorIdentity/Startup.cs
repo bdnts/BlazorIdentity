@@ -41,7 +41,7 @@ namespace BlazorIdentity
             services.AddScoped<IdentityAuthenticationStateProvider>();
             //services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<IdentityAuthenticationStateProvider>());
             //services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<BlazorIdentityUser>>();
-            services.AddScoped<IAuthorizeApi, AuthorizeApi>();
+            //services.AddScoped<IAuthorizeApi, AuthorizeApi>();
             services.AddSingleton<WeatherForecastService>();
 
             // Register the Swagger generator, defining 1 or more Swagger documents
@@ -49,7 +49,10 @@ namespace BlazorIdentity
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
-            services.AddHttpClient();
+            services.AddHttpClient<IAuthorizeApi, AuthorizeApi>(client =>
+            {
+                client.BaseAddress = new Uri(Configuration["BaseUrl"]);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
