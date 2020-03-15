@@ -15,7 +15,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using BlazorIdentity.Areas.Identity;
 using BlazorIdentity.Areas.Identity.Data;
+using BlazorIdentity.States;
+using BlazorIdentity.Services.Contracts;
+using BlazorIdentity.Services.Implementations;
 using BlazorIdentity.Data;
+using Microsoft.OpenApi.Models;
 
 namespace BlazorIdentity
 {
@@ -34,8 +38,18 @@ namespace BlazorIdentity
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<BlazorIdentityUser>>();
+            services.AddScoped<IdentityAuthenticationStateProvider>();
+            //services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<IdentityAuthenticationStateProvider>());
+            //services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<BlazorIdentityUser>>();
+            services.AddScoped<IAuthorizeApi, AuthorizeApi>();
             services.AddSingleton<WeatherForecastService>();
+
+            // Register the Swagger generator, defining 1 or more Swagger documents
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+            });
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,6 +70,16 @@ namespace BlazorIdentity
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+            });
+
             app.UseRouting();
 
             app.UseAuthentication();
@@ -65,6 +89,7 @@ namespace BlazorIdentity
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+                endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
             });
             ApplicationDbInitializer.SeedUsers(userManager);
         }
