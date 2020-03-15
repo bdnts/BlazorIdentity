@@ -4,14 +4,15 @@
 @using BlazorIdentity.Areas.Identity.Data;
 @using BlazorIdentity.Areas.Identity.Pages.Account
 @using BlazorIdentity.Data;
+@using BlazorIdentity.States;
+@using BlazorIdentity.Services.Implementations;
 @using System.ComponentModel.DataAnnotations;
 @using System;
 
 @inject UserManager<BlazorIdentityUser> _UserManager
 @inject SignInManager<BlazorIdentityUser> _SignInManager
 @inject NavigationManager _NavMan;
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@*@inject IdentityAuthenticationStateProvider  asp*@
+@inject IdentityAuthenticationStateProvider  asp
 <h3>LoginB</h3>
 @*<button @onclick="Login">Login</button>*@
 
