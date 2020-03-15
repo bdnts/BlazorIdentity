@@ -15,22 +15,19 @@ namespace BlazorIdentity.Services.Implementations
 {
     public class AuthorizeApi : IAuthorizeApi
     {
-        private readonly IHttpClientFactory _clientFactory;
         private readonly HttpClient _httpClient;
 
-        public AuthorizeApi(IHttpClientFactory clientFactory)
+        public AuthorizeApi(HttpClient httpClient)
         {
-            _clientFactory = clientFactory;
-            _httpClient = _clientFactory.CreateClient();
+            _httpClient = httpClient;
         }
 
         public async Task Login(LoginParameters loginParameters)
         {
             try
             {
-
                 var stringContent = new StringContent(JsonSerializer.Serialize(loginParameters), Encoding.UTF8, "application/json");
-                var result = await _httpClient.PostAsync("https://localhost:44365/api/Authorize/Login", stringContent);
+                var result = await _httpClient.PostAsync("api/Authorize/Login", stringContent);
                 if (result.StatusCode == System.Net.HttpStatusCode.BadRequest) throw new Exception(await result.Content.ReadAsStringAsync());
                 result.EnsureSuccessStatusCode();
             }
