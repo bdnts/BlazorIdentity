@@ -1,4 +1,4 @@
-# BlazorIdentity
+Ôªø# BlazorIdentity
 Create a fully Blazor version of Identity, document the steps and issues.
 
 https://docs.microsoft.com/en-us/aspnet/core/security/blazor/?view=aspnetcore-3.1&tabs=visual-studio
@@ -9,8 +9,8 @@ https://docs.microsoft.com/en-us/aspnet/core/security/blazor/?view=aspnetcore-3.
 4. BlazorIdentity --> Add --> New Scaffold Item 
     1. Identity --> Add
     2. Wait for it
-    3. New Layout Page ñ No change 
-    4. Override all files ñcheck 
+    3. New Layout Page ‚Äì No change 
+    4. Override all files ‚Äìcheck 
     5. Data Context Class 
        1. '+
        2. BlazorIdentityContext 
@@ -51,11 +51,11 @@ https://docs.microsoft.com/en-us/aspnet/core/security/blazor/?view=aspnetcore-3.
    3.  Remove extra comma if necessary 
    4.  Compile 
    5.  Debug 
-   6.  Wait for it ñ Hello World 
+   6.  Wait for it ‚Äì Hello World 
    7.  Commit Changes 
        1.  Everything now 
        2.  Create tag 
-7. Optional ñ Enable Beyond Compare for source code diffing 
+7. Optional ‚Äì Enable Beyond Compare for source code diffing 
     1. In Solution --> BlazorIdentity -->.git --> config 
 ```
 [diff]
@@ -173,7 +173,7 @@ private string message { get; set; } = "None";
                8.   Manually populate AspNetUserRoles   
 ### Tag Base0.4 created
 
-17. Logout error ñ anti forgery token exception 
+17. Logout error ‚Äì anti forgery token exception 
     1. ```[IgnoreAntiForgeyToken]``` added to LogoutMode 
 18. Admin page 
     1. Michael Washington http://blazorhelpwebsite.com/Blog/tabid/61/EntryId/4354/A-Simple-Blazor-User-and-Role-Manager.aspx 
@@ -225,5 +225,88 @@ private string message { get; set; } = "None";
      4. Borrowed forms and combined logic of LoginB: 
         1. Getting same exception: "The response headers cannot be modified because the response has already started." 
         2. So close, and then to be defeated like this.   ARRRRRGGGGHHH!
+### Tag Base0.7.1 create
+26. Creating API for authentication ‚Äì BlazorWithIdentity 
+    1. Will borrow from BWI, and create 1 project with Client API calls to Server for Authentication purposes. 
+    2. Server APIs 
+       1. Generically change BlazorWithIdentity.* to BlazorIdentity.  This was a continual problem, so always do search and replace when weird errors occur. 
+       2. Controllers 
+          1. Brought over Controllers/AuthorizeController.cs 
+          2. Brought over modes from Shared project, except WeatherForecast 
+          3. BWI.Server/Models/Applicationuser.cs not necessary.  BI/Areas/Identity/Data/BlazorIdentityContext.cs was created by scaffolding. 
+          4. Clean compile 
+       3. Added Swashbuckle to project to see if apis work 
+          1. https://docs.microsoft.com/en-us/aspnet/core/tutorials/getting-started-with-swashbuckle?view=aspnetcore-3.1&tabs=visual-studio 
+          2. Stop at Customize and Extend 
+          3. Get clean compile  
+          4. Launch application 
+          5. Try https://localhost:<port>/swagger 
+          6. Swagger page appears  with  APIs listed 
+          7. Try out Login, Post, AntiForgery error. 
+          8. Success! 
+       4. Client 
+          1. Same name change rules as before 
+          2. Bring over Services 
+          3. AuthorizeApi.cs --> GetUserInfo --> httpClient.GetJsonAsync() does not exist 
+             1. https://docs.microsoft.com/en-us/aspnet/core/blazor/call-web-api?view=aspnetcore-3.1 
+             2. https://docs.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-3.1 
+             3. Blazor Server should use the IHttpClientFactory for "creating" HttpClient instances. 
+             4. Add ```services.AddHttpClient();``` to startup.cs 
+             5. DI into AuthorizeAPI.cs 
+                1. Add ```private readonly IHttpClientFactory _clientFactory;```
+                2. Change Ctor to pass factory instead of client 
+                ```
+                    public AuthorizeApi(IHttpClientFactory clientFactory)
+                    {
+                        _clientFactory = clientFactory;
+                        _httpClient = _clientFactory.CreateClient();
+                    }
+                ```
+                3. Doesn't fix the problem, but at least now we have a proper httpClient 
+                4. Swapped out for 2 lines 
+               ```
+                    public async Task<UserInfo> GetUserInfo() 
+                    { 
+                        var r1 = await _httpClient.GetStringAsync("api/Authorize/UserInfo"); 
+                        var result = JsonSerializer.Deserialize<UserInfo>(r1); 
+                        //var result = await _httpClient.GetJsonAsync<UserInfo>("api/Authorize/UserInfo"); 
+                        return result; 
+                    } 
+               ```
+                5. Now compiling
+          4. BWI Login.razor, bring across and rename as LoginC.razor 
+             1. Has LoginLayout.  Comment out for now 
+             2. Added ```@using BlazorIdentity.Models``` to satisfy LoginParameters 
+             3. IdentityAuth not being found 
+                1. Not catching all the BlazorWithIdentity entries.  Main source of problems. 
+                2. Mising @using statements another common problem. 
+             4. Try out LoginC.razor 
+                1. Blew chunks, no registered service IdentityAuthStateProvider 
+                ```
+                services.AddScoped<IdentityAuthenticationStateProvider>(); 
+                services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<IdentityAuthenticationStateProvider>()); 
+                //services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<BlazorIdentityUser>>(); 
+                ```
+            5. Try again 
+               1. Threw exception, "Some services are not able to be contructed."  üôÅ 
+               2. Missing piece    ```services.AddScoped<IAuthorizeApi, AuthorizeApi>(); ```
+            6. Try again 
+               1. Success - LoginC came up and was able to enter credentials
+               2. Login attempt ‚Äì invalid Uri 
+               3. Hard Coded the URI to get around problem
+               4. Again, BlazorWithIdentity went uncaught 
+               5. Change all the ApplicationUser into BlazorIdentityUser 
+               6. Comment out BlazorIdentity.Models ApplicationUser 
+               7. Added BlazorIdentityUser from BlazorIdentity.Areas.Identity.Data, where scaffolding put it. 
+            7. Try again 
+               1. Succeeded to user logging 
+               2. Even detected bad password entry
+               3. Hit exception in GetUserInfo which makes GetStringAsync call.  Hardwired it for now. 
+               4. Seems to be successful 
+               5. Modify LoginC to replace Login.cshtml & cs 
+               
+### Tag Base0.8 created
+27. Replacing Login.cshtml with Login.razor
+28. 
 
  
