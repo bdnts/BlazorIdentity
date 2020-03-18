@@ -1,0 +1,50 @@
+﻿@page "/ConfirmEmail/"
+@using BlazorIdentity.Components;
+@using BlazorIdentity.Areas.Identity.Data; 
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.Text;
+@using Microsoft.AspNetCore.Identity;
+
+@inject NavigationManager navman;
+@inject UserManager<BlazorIdentityUser> _userManager
+
+<h1>Confirm Email</h1>
+<StatusMessage message="@StatusMessage" />
+
+@code {
+    public string userId { get; set; }
+    public string code { get; set; }
+    public string StatusMessage { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var qs = navman.ToAbsoluteUri(navman.Uri).Query;
+        var query = QueryHelpers.ParseQuery(qs);
+        if(query.TryGetValue("userId", out var id_userid))
+        {
+            this.userId = id_userid;
+        }
+        if(query.TryGetValue("code", out var id_code))
+        {
+            this.code = id_code;
+        }
+
+        if (userId == null || code == null)
+        {
+            navman.NavigateTo("/Index");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            navman.NavigateTo("/Index/Unable to load user with ID '{userId}'.");
+        }
+
+        code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+        var result = await _userManager.ConfirmEmailAsync(user, code);
+        StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+
+        base.OnParametersSet();
+        return;
+    }
+}
