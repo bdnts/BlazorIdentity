@@ -1,9 +1,26 @@
 ﻿@page "/"
+@page "/Index/{message}"
+
 @using Microsoft.AspNetCore.Components.Authorization
+@using BlazorIdentity.Areas.Identity.Data
+@using Microsoft.AspNetCore.Identity
+
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<BlazorIdentityUser> _userManager
+@inject SignInManager<BlazorIdentityUser> _signInManager
 
 <button @onclick="@LogUsername">Write user info to console</button>
 <p>@message</p>
+
+<NavLink class="nav-link" href="Register">
+    <span class="oi oi-plus" aria-hidden="true"></span> Register
+</NavLink>
+
+<NavLink class="nav-link" href="RegisterConfirmation/test4@example.com">
+    <span class="oi oi-plus" aria-hidden="true"></span> Confirmation
+</NavLink>
+
+<button @onclick="@Login">Login</button>
 
 <AuthorizeView>
     <Authorized>
@@ -28,7 +45,7 @@
 </AuthorizeView>
 
 @code {
-    private string message { get; set; } = "None";
+    [Parameter] public string message { get; set; } = "None";
 
     private async Task LogUsername()
     {
@@ -42,6 +59,22 @@
         else
         {
             message = "The user is NOT authenticated.";
+        }
+    }
+
+    private async Task Login()
+    {
+        try
+        {
+            var result = await _signInManager.PasswordSignInAsync("admin@example.com", "P@ssword1234", false, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("ex={0}", ex);
         }
     }
 }
