@@ -1,0 +1,100 @@
+﻿@page "/RegisterConfirmation"
+@page "/RegisterConfirmation/{email}"
+
+@using Microsoft.AspNetCore.Authorization;
+@using System.Text;
+@using System.Threading.Tasks;
+@using BlazorIdentity.Areas.Identity.Data;
+@using Microsoft.AspNetCore.Identity.UI.Services;
+@using Microsoft.AspNetCore.Mvc;
+@using Microsoft.AspNetCore.Mvc.RazorPages;
+@using Microsoft.AspNetCore.WebUtilities;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.Routing;
+@using MvcRouteData = Microsoft.AspNetCore.Routing;
+@using Microsoft.AspNetCore.Mvc.Routing;
+@using Microsoft.AspNetCore.Mvc.Abstractions;
+@using Microsoft.AspNetCore.Http
+
+@inject UserManager<BlazorIdentityUser> _userManager
+@inject SignInManager<BlazorIdentityUser> _signInManager
+@inject IEmailSender _emailSender;
+@inject NavigationManager navman;
+@inject LinkGenerator _linkGenerator;
+
+<h1>Register confirmation</h1>
+@{
+    if (DisplayConfirmAccountLink)
+    {
+        <p>
+            This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
+            Normally this would be emailed: <a id="confirm-link" href="@EmailConfirmationUrl">Click here to confirm your account</a>
+        </p>
+    }
+    else
+    {
+        <p>
+            Please check your email to confirm your account.
+        </p>
+    }
+}
+
+@code {
+    [Parameter] public string email { get; set; }
+
+    public string Email { get; set; }
+
+    public bool DisplayConfirmAccountLink { get; set; } = true;
+
+    public string EmailConfirmationUrl { get; set; }
+
+    [Inject] protected IUrlHelperFactory UrlHelperFactory { get; set; }
+    [Inject] protected IHttpContextAccessor HttpContextAccessor { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var urlHelper = UrlHelperFactory.GetUrlHelper(
+                new ActionContext(HttpContextAccessor.HttpContext,
+                new MvcRouteData.RouteData(HttpContextAccessor.HttpContext.Request.RouteValues),
+                new ActionDescriptor()));
+
+        if (email == null)
+        {
+            navman.NavigateTo("/Index/Email is null");
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            string message = $"Unable to load user with email '{email}'.";
+            navman.NavigateTo("Index/" + message);
+        }
+
+        Email = email;
+        // Once you add a real email sender, you should remove this code that lets you confirm the account
+        DisplayConfirmAccountLink = true;
+        if (DisplayConfirmAccountLink)
+        {
+            var userId = await _userManager.GetUserIdAsync(user);
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var httpContext = HttpContextAccessor.HttpContext;
+
+            //TODO: Fucking no comprehensive examples on linkGenerator!  Give me a MAN page any day.
+            var storeId = new Random().Next(1, 100);
+            EmailConfirmationUrl = _linkGenerator.GetPathByAction("/Account/ConfirmEmail", "Identity", new { storeId });
+            //EmailConfirmationUrl = urlHelper.Page("ConfirmEmail");
+            //    EmailConfirmationUrl = urlHelper.Page(
+            //"/ConfirmEmail",
+            //pageHandler: null,
+            //values: new { area="/", userId = user.Id, code = code },
+            //protocol: "https");
+            EmailConfirmationUrl = "https://localhost:44365/ConfirmEmail?userId=" + user.Id + "&code=" + code;
+            //"https://localhost:44365/Identity/Account/ConfirmEmail?userId=f1a61d5e-a90b-41cf-9208-ee33f9722c95&code=Q2ZESjhIMG5NTlRycVR4TGhnS2w0Wk56dVM0SUxUZjA5QVFYdG1RQVRpNXhXSEdCUnpBT0pnUmdPeDB1RHJ4UFdPTjV3RmhwY1pCd0hFR0tBdjhnNTB1RjhRRnE2T1VkQTJYQUF0c1ZzVWRxczRud0hBODIvUzU0M3ByUmpyMEkzSllYdnhRZWNQOWREcGlFd1hway9Od3g2TWpVU0xGT1RRS2hTUk5ZR2YxYkhvTVVMdHZQY2laQnBDeTNoeHdJeFRHamxwUjBwNHJBVDRnMXppVGtQbHY4UnNCQWpBd2x0MXYzL3QwcU5OcjhPV0drYXVwa0p5bDFXNENFUDJ6bFhLbXBYUT09"
+            //"https://localhost:44365/Identity/Account/ConfirmEmail?userId=f1a61d5e-a90b-41cf-9208-ee33f9722c95&code=Q2ZESjhIMG5NTlRycVR4TGhnS2w0Wk56dVM1M0NNajNKdlRqK2RlY1VIM2lzb2tGVHJBRXhKbGdTaFJQcURQZFZpb1JSWk9MYlJUR3hpNVRtVTdNR0JhU2RrcGNCL1FWa1JjNFRZemdvTUM0c2ZoZEFzMEUwdkIvZHhoZHArUjJJRGt2MmJGazZUVFBCdS9QR2xra2dLTS82cWppTWc3UmlrQWlldmlUUjc2Sy9NYmVoaEdyNTZMbXJMU1JOdEs4TkRqRXVyTVBIRmlaMEo2WWt6aGRmaEVIZ3lwd2lyRDJxTXFpa1dGTXIxV2hML013R0VkOURvbGpjcHlSbnpVZjB2dGNndz09"
+        }
+
+        await base.OnParametersSetAsync();
+        return;
+    }
+}
