@@ -1,0 +1,78 @@
+﻿@page "/Register"
+@using Microsoft.AspNetCore.Components.Authorization
+@using BlazorIdentity.Areas.Identity.Data
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Logging
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Mvc.RazorPages
+@using Microsoft.AspNetCore.Mvc
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Identity.UI.Services
+@using MvcRouteData = Microsoft.AspNetCore.Routing;
+@using Microsoft.AspNetCore.Mvc.Routing;
+@using Microsoft.AspNetCore.Mvc.Abstractions;
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<BlazorIdentityUser> _userManager
+@inject SignInManager<BlazorIdentityUser> _signInManager
+@inject IEmailSender _emailSender;
+@inject NavigationManager navman;
+
+<h1>Register</h1>
+
+<button @onclick="@RegisterUser">Register user</button>
+
+@code {
+    private string message { get; set; } = "None";
+    public string ReturnUrl { get; set; } = string.Empty;
+
+    [Inject] protected IUrlHelperFactory UrlHelperFactory { get; set; }
+    [Inject] protected IHttpContextAccessor HttpContextAccessor { get; set; }
+
+    private async Task RegisterUser()
+    {
+        var urlHelper = UrlHelperFactory.GetUrlHelper(
+                new ActionContext(HttpContextAccessor.HttpContext,
+                new MvcRouteData.RouteData(HttpContextAccessor.HttpContext.Request.RouteValues),
+                new ActionDescriptor()));
+        var returnUrl = ReturnUrl ?? urlHelper.Content("~/");
+
+        //TODO: Remove hard coding.
+        var user = new BlazorIdentityUser { UserName = "test4", Email = "test4@example.com" };
+        var result = await _userManager.CreateAsync(user, "P@ssword1234");
+
+        if (!result.Succeeded)
+        {
+            return; //TODO: Error this
+        }
+
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        //TODO: Validate this is correct.
+        var callbackUrl = urlHelper.Page(
+            "/ConfirmEmail"
+            //pageHandler: null,
+            //values: new { },
+            ////values: new { area="Identity", userId = user.Id, code = code },
+            //protocol: "https"
+            );
+
+        //TODO: Remove hard coded values
+        await _emailSender.SendEmailAsync("test4@example.com", "Confirm your email",
+            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+        if (_userManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            //TODO: Remove hard coded values
+            navman.NavigateTo("RegisterConfirmation/" + "test4@example.com");
+            //return RedirectToPage("RegisterConfirmation", new { email = Input.Email });
+        }
+        else
+        {
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            navman.NavigateTo(returnUrl);
+        }
+    }
+}
