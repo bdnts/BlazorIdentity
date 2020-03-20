@@ -2,13 +2,22 @@
 
 @if (!string.IsNullOrEmpty(message))
 {
-    var statusMessageClass = message.StartsWith("Error") ? "danger" : "success";
     <div class="alert alert-@statusMessageClass alert-dismissible" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        @message
+        <NavLink class="nav-link" href="/">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            @message
+        </NavLink>
     </div>
 }
 
 @code {
     [Parameter] public string message { get; set; }
+    public string statusMessageClass { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (!string.IsNullOrEmpty(message))
+            statusMessageClass = message.StartsWith("Error") ? "danger" : "success";
+    }
 }
