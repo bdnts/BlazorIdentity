@@ -15,6 +15,8 @@
 @using Microsoft.AspNetCore.Mvc.Abstractions;
 @using BlazorIdentity.Data;
 @using BlazorIdentity.Helpers; 
+@using Microsoft.AspNetCore.Routing; 
+@using BlazorIdentity.Extensions; 
 
 @inject AuthenticationStateProvider authenticationStateProvider
 @inject UserManager<BlazorIdentityUser> _userManager
@@ -63,14 +65,28 @@
 </EditForm>
 
 @code {
-    private string message { get; set; } = "None";
+    //TODO: Make sure this is being used correctly
     public string ReturnUrl { get; set; } = string.Empty;
     private EditContext _editContext;
-
+    /// <summary>
+    /// Factory to generate urlHelper object.  Used to create returnUrl and confirmation email callbackUrl.
+    /// Theoretically, this can be replaced with LinkGenerator Service, but so far can't get the syntax right.
+    /// </summary>
     [Inject] protected IUrlHelperFactory UrlHelperFactory { get; set; }
+
+    /// <summary>
+    /// Used to get the HttpContext object
+    /// </summary>
     [Inject] protected IHttpContextAccessor HttpContextAccessor { get; set; }
 
+    /// <summary>
+    /// Data Register object for new user
+    /// </summary>
     DataRegister dRegister { get; set; } = new DataRegister();
+
+    /// <summary>
+    /// Object to process a dictionary of errors per field and display them on form
+    /// </summary>
     public ServerSideValidator serverSideValidator;
 
     protected override void OnInitialized()
@@ -80,38 +96,57 @@
         base.OnInitialized();
     }
 
-    private async Task RegisterUser(EditContext editContext)
+    /// <summary>
+    /// Invoked by <EditForm> when submit button is clicked.
+    /// </summary>
+    /// <returns></returns>
+    private async Task RegisterUser()
     {
-        var urlHelper = UrlHelperFactory.GetUrlHelper(
-                new ActionContext(HttpContextAccessor.HttpContext,
-                new MvcRouteData.RouteData(HttpContextAccessor.HttpContext.Request.RouteValues),
-                new ActionDescriptor()));
+        var httpContext = HttpContextAccessor.HttpContext;
+        var actionDescriptor = new ActionDescriptor();
+        var routeValues = httpContext.Request.RouteValues;
+        var routeData = new MvcRouteData.RouteData(routeValues);
+
+        var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
+        var urlHelper = UrlHelperFactory.GetUrlHelper(actionContext);
         var returnUrl = ReturnUrl ?? urlHelper.Content("~/");
 
-        //TODO: Remove hard coding.
-        var user = new BlazorIdentityUser { UserName = "test4", Email = "test4@example.com" };
-        var result = await _userManager.CreateAsync(user, "P@ssword1234");
+        // BlazorIdenityUser is this project's IdentityUser class.
+        var user = new BlazorIdentityUser { UserName = dRegister.UserName, Email = dRegister.Email };
+        // Actually writing the user details to database
+        var result = await _userManager.CreateAsync(user, dRegister.Password);
 
         if (!result.Succeeded)
-        {
+        {   // Failed writing to database.  Create local dictionary of errors.
             Dictionary<string, List<string>> errors = new Dictionary<string, List<string>>();
-
+            //Todo: Figure out how to make this generic
+            List<string> userName = new List<string>();
+            List<string> email = new List<string>();
+            List<string> password = new List<string>();
             ((from kp in result.Errors
-                where errors.ContainsKey(kp.Code)
-                select kp).ToList()).ForEach(kp =>
-                {
-                    if (kp.Code.Equals("DuplicateUserName"))
-                        errors["UserName"].Add(kp.Description);
+              select kp).ToList()).ForEach(kp =>
+              {
+                  if (kp.Code.Equals("DuplicateUserName"))
+                      userName.Add(kp.Description);
+                  if (kp.Code.Equals("PasswordRequiresNonAlphanumeric"))
+                      password.Add(kp.Description);
+                  if (kp.Code.Equals("PasswordRequiresLower"))
+                      password.Add(kp.Description);
+                  if (kp.Code.Equals("PasswordRequiresUpper"))
+                      password.Add(kp.Description);
+              });
 
-                });
+            errors.Add("UserName", userName);
+            errors.Add("Email", email);
+            errors.Add("Password", password);
 
-            ((from kp in result.Errors
-                where !errors.ContainsKey(kp.Code)
-                select kp).ToList()).ForEach(kp =>
-                {
-                    if (kp.Code.Equals("DuplicateUserName"))
-                        errors.Add("UserName", new List<string>() { kp.Description });
-                });
+            // The <EditForm> is valid, but the transaction failed for some reason.
+            // This is NOT a form validation error, One common case is the user already exists, and results. Errors contains
+            // Code and Description.  ServerSideValidator is expecting a field name and error message.
+            // This doesn't naturally line up.  So, while scanning the list of errors--which only 
+            // has one in this case--doing a check for a Code="DuplicateUserName".
+            // If true, then add an entry to the errors dictionary, with a key value of field
+            // "UserName" and then the description.  
 
             serverSideValidator.DisplayErrors(errors);
             return;
@@ -120,23 +155,14 @@
 
         var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        //TODO: Validate this is correct.
-        var callbackUrl = urlHelper.Page(
-            "/ConfirmEmail"
-            //pageHandler: null,
-            //values: new { },
-            ////values: new { area="Identity", userId = user.Id, code = code },
-            //protocol: "https"
-            );
+        var callbackUrl = urlHelper.EmailConfirmationLink(user.Id, code, httpContext.Request.Scheme);
 
-        //TODO: Remove hard coded values
-        await _emailSender.SendEmailAsync("test4@example.com", "Confirm your email",
+        await _emailSender.SendEmailAsync(dRegister.Email, "Confirm your email",
             $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
         if (_userManager.Options.SignIn.RequireConfirmedAccount)
         {
-            //TODO: Remove hard coded values
-            navman.NavigateTo("RegisterConfirmation/" + "test4@example.com");
+            navman.NavigateTo("RegisterConfirmation/" + dRegister.Email);
             //return RedirectToPage("RegisterConfirmation", new { email = Input.Email });
         }
         else
